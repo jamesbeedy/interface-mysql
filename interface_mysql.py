@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 
 
-class DBInfoAvailableEvent(EventBase):
+class DatabaseAvailableEvent(EventBase):
 
     def __init__(self, handle, db_info):
         super().__init__(handle)
@@ -29,21 +29,18 @@ class DBInfoAvailableEvent(EventBase):
     def restore(self, snapshot):
         self._db_info = DBInfo.restore(snapshot)
 
-class DBInfoEvents(ObjectEvents):
-    db_info_available = EventSource(DBInfoAvailableEvent)
-
-
+class DatabaseEvents(ObjectEvents):
+    database_available = EventSource(DatabaseAvailableEvent)
 
 class MySQLClient(Object):
     """This class defines the functionality for the 'requires'
     side of the 'foo' relation.
-
     Hook events observed:
         - db-relation-created
         - db-relation-joined
         - db-relation-changed
     """
-    on = DBInfoEvents()
+    on = DatabaseEvents()
 
     def __init__(self, charm, relation_name):
         super().__init__(charm, relation_name)
@@ -77,13 +74,6 @@ class MySQLClient(Object):
 
 
     def _on_relation_changed(self, event):
-        """This method retrieves the value for 'foo'
-        (set by the provides side of the relation) from the
-        event.relation.data on the relation-changed hook event.
-        """
-        # Retrieve and log the value for 'foo' if it exists in
-        # the relation data.
-
         while not event.relation.data.get(event.unit, None):
             sleep(1)
             logger.info("Waiting on mysql relation data")
@@ -101,7 +91,7 @@ class MySQLClient(Object):
                 port="3306",
                 database=database,
             )
-            self.on.db_info_available.emit(db_info)
+            self.on.database_available.emit(db_info)
         else:
             logger.info("DB INFO NOT AVAILABLE")
 
@@ -156,3 +146,4 @@ class DBInfo:
             'db_info.port': self.port,
             'db_info.database': self.database,
         }
+
